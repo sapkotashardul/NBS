@@ -15,7 +15,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-PERSON, NAME, PERIOD, AVAILABILITY = range(4)
+PERSON, NAME, PERIOD, AVAILABILITY,  = range(4)
 
 def start(bot, update):
     user = update.message.from_user
@@ -35,36 +35,48 @@ def name(bot, update):
     update.message.reply_text("How long do you want the event to be (in minutes)?")
     return PERIOD
 
-def typing(bot, update):
-    timing = ['Monday',"Wednesday","Friday"]
-    keyboard = [[InlineKeyboardButton(timing[0], callback_data='1'),
-                    InlineKeyboardButton(timing[1], callback_data='2')],
-                [InlineKeyboardButton(timing[2], callback_data='3')]]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    update.message.reply_text('Please choose:', reply_markup=reply_markup)
-
-def button(bot, update):
-    query = update.callback_query
-
-    bot.edit_message_text(text="Selected option: {}".format(query.data),
-                          chat_id=query.message.chat_id,
-                          message_id=query.message.message_id)
+# def typing(bot, update):
+#     timing = ['Monday',"Wednesday","Friday"]
+#     keyboard = [[InlineKeyboardButton(timing[0], callback_data='1'),
+#                     InlineKeyboardButton(timing[1], callback_data='2')],
+#                 [InlineKeyboardButton(timing[2], callback_data='3')]]
+#
+#     reply_markup = InlineKeyboardMarkup(keyboard)
+#
+#     update.message.reply_text('Please choose:', reply_markup=reply_markup)
+#
+# def button(bot, update):
+#     query = update.callback_query
+#
+#     bot.edit_message_text(text="Selected option: {}".format(query.data),
+#                           chat_id=query.message.chat_id,
+#                           message_id=query.message.message_id)
 
 def period(bot, update):
     user = update.message.from_user
     length_of_event = update.message.text
     update.message.reply_text("Great, here are your free times!")
     free_times = db.get_free_time('1')
+    keyboard = []
+    index = 0
     for i in range(len(free_times)):
         day = pd.Timestamp(free_times[i][0]).date()
         start = pd.Timestamp(free_times[i][0])
         end = pd.Timestamp(free_times[i][1])
-        free_period = pd.Timedelta(end - start) 
+        free_period = pd.Timedelta(end - start)
         if free_period > pd.Timedelta(length_of_event + 'minutes'):
-            update.message.reply_text(str(day) + ", " + str(start.time()) + " => " + str(end.time()))
+            response = str(day) + ", " + str(start.time()) + " => " + str(end.time())
+            #update.message.reply_text(str(day) + ", " + str(start.time()) + " => " + str(end.time()))
+            keyboard.append([InlineKeyboardButton(response, callback_data='{}'.format(i))])
+            index = index + 1
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text('Please choose:', reply_markup=reply_markup)
     return AVAILABILITY
+
+def buttonForPeriod(bot, update):
+    query = update.callback_query
+    print query.data
+    print query.message
 
 def availability(bot, update):
     keyboard = [[InlineKeyboardButton("Request Meeting with", switch_inline_query="{} wants to schedule a meeting with you".format(update.message.from_user['first_name'])),
@@ -147,6 +159,7 @@ def main():
 
     #dp.add_handler(InlineQueryHandler(button))
     dp.add_handler(InlineQueryHandler(inlinequery))
+    dp.add_handler(CallbackQueryHandler(buttonForPeriod))
     # log all errors
     dp.add_error_handler(error)
 
