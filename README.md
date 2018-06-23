@@ -1,2 +1,2 @@
 # NBS
-A No BullSh*t Calendar for No BullSh*t People 
+A No BullShit Calendar for No BullShit People 
