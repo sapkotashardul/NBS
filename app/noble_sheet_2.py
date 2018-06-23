@@ -1,10 +1,13 @@
-from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove)
+from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup, InputTextMessageContent, InlineQueryResultArticle, ParseMode)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler,
-                          ConversationHandler, CallbackQueryHandler)
+                          ConversationHandler, CallbackQueryHandler, InlineQueryHandler)
 import logging
 import pandas as pd
 from dbhelper import DBHelper
 db = DBHelper()
+import logging
+from uuid import uuid4
+from telegram.utils.helpers import escape_markdown
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -14,13 +17,11 @@ logger = logging.getLogger(__name__)
 
 PERSON, NAME, PERIOD, AVAILABILITY = range(4)
 
-
 def start(bot, update):
     user = update.message.from_user
     update.message.reply_text(
         'Hi, {}! Who do you want to schedule a meeting with?'.format(user.first_name))
     return PERSON
-
 
 def person(bot, update):
     user = update.message.from_user
@@ -66,8 +67,42 @@ def period(bot, update):
     return AVAILABILITY
 
 def availability(bot, update):
-    update.message.reply_text("Great, here are your free times!")
-    return ConversationHandler.END
+    keyboard = [[InlineKeyboardButton("Request Meeting with", switch_inline_query="{} wants to schedule a meeting with you".format(update.message.from_user['first_name'])),
+    ]]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text('Please choose:', reply_markup=reply_markup)
+
+
+def button(bot, update):
+    query = update.inline_query
+
+
+def inlinequery(bot, update):
+    """Handle the inline query."""
+    query = update.inline_query.query
+    results = [
+        InlineQueryResultArticle(
+            id=uuid4(),
+            title="Caps",
+            input_message_content=InputTextMessageContent(
+                query.upper())),
+        InlineQueryResultArticle(
+            id=uuid4(),
+            title="Bold",
+            input_message_content=InputTextMessageContent(
+                "*{}*".format(escape_markdown(query)),
+                parse_mode=ParseMode.MARKDOWN)),
+        InlineQueryResultArticle(
+            id=uuid4(),
+            title="Italic",
+            input_message_content=InputTextMessageContent(
+                "_{}_".format(escape_markdown(query)),
+                parse_mode=ParseMode.MARKDOWN))]
+
+    update.inline_query.answer(results)
+
 
 
 def cancel(bot, update):
@@ -83,10 +118,11 @@ def error(bot, update, error):
     logger.warning('Update "%s" caused error "%s"', update, error)
     
     return ConversationHandler.END
+
 def main():
     # Create the EventHandler and pass it your bot's token.
     updater = Updater("570050014:AAGrqiHt0choAHLYANzc8-8bcUHI5VzbRFw")
-
+    ##Updater("491905862:AAFLeZ9-H56wumXpGN0LoyUN_1Dmm751nH8")
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
@@ -109,9 +145,8 @@ def main():
 
     dp.add_handler(conv_handler)
 
-    updater.dispatcher.add_handler(CommandHandler('typing', typing))
-    updater.dispatcher.add_handler(CallbackQueryHandler(button))
-
+    #dp.add_handler(InlineQueryHandler(button))
+    dp.add_handler(InlineQueryHandler(inlinequery))
     # log all errors
     dp.add_error_handler(error)
 
