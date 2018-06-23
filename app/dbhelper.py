@@ -1,9 +1,8 @@
 import sqlite3
-
 class DBHelper:
     def __init__(self, dbname="calendar.db"):
         self.dbname = dbname
-        self.conn = sqlite3.connect(dbname) 
+        self.conn = sqlite3.connect(dbname, check_same_thread=False) 
     '''
     def setup(self):
         #tblstmt = "CREATE TABLE IF NOT EXISTS items (description text, owner text)"db.conn.execute("create table if not exists items (description text, owner text")
@@ -30,14 +29,11 @@ class DBHelper:
         args = (user_id)
         return [[x[0],x[1]] for x in self.conn.execute(stmt, args)]
     def get_free_time(self, user_id, small_limit = None , big_limit = None):
-        if small_limit = None and big_limit = None:
-            busy_time = get_schedule(user_id)
-            busy_time = busy_time.sort(key=lambda x: x[0])
+        if (small_limit == None) and (big_limit == None):
+            busy_time = self.get_schedule(user_id)
+            #busy_time = busy_time.sort(key=lambda x: x[0])
             free_time = [] 
             for i in range(len(busy_time)-1):
-                free_time.append([busy_time[i][1], busy_time[i+1][0])
-            free_time.appen([busy_time[-1][1],busy_time[0][0]])
-
-        
-
-db = DBHelper()
+                free_time.append([busy_time[i][1], busy_time[i+1][0]])
+            free_time.append([busy_time[-1][1],busy_time[0][0]])
+        return free_time
