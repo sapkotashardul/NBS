@@ -1,4 +1,5 @@
 import sqlite3
+import pandas as pd 
 class DBHelper:
     def __init__(self, dbname="calendar.db"):
         self.dbname = dbname
@@ -36,4 +37,17 @@ class DBHelper:
             for i in range(len(busy_time)-1):
                 free_time.append([busy_time[i][1], busy_time[i+1][0]])
             free_time.append([busy_time[-1][1],busy_time[0][0]])
+        else: 
+            busy_time = self.get_schedule(user_id)
+            #busy_time = busy_time.sort(key=lambda x: x[0])
+            free_time = [] 
+            for i in range(len(busy_time)-1):
+                l1 = pd.Timestamp(str(busy_time[i][1]))
+                l2 = pd.Timestamp(str(busy_time[i+1][0]))
+                if (l1 > small_limit) and (l2 < big_limit): 
+                    free_time.append([busy_time[i][1], busy_time[i+1][0]])
+            l1 = pd.Timestamp(str(busy_time[-1][1]))
+            l2 = pd.Timestamp(str(busy_time[0][0]))
+            if (l1 > small_limit) and (l2 < big_limit): 
+                free_time.append([busy_time[i][1], busy_time[i+1][0]])
         return free_time
