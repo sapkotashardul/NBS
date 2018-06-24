@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 PERSON, NAME, PERIOD, REQUEST, AVAILABILITY = range(5)
 
+CHAT_ID_Y = 441698305
+CHAT_ID_X = 529025540
+CHOSEN_PERIODS = []
+LENGTH_OF_EVENT = 0
+
 def start(bot, update):
     user = update.message.from_user
     update.message.reply_text(
@@ -54,10 +59,9 @@ def name(bot, update):
 
 def period(bot, update):
     user = update.message.from_user
-    length_of_event = update.message.text
+    LENGTH_OF_EVENT = update.message.text
     update.message.reply_text("Great, here are your free times!")
     free_times = db.get_free_time('1')
-    chosen_periods = []
     keyboard = []
     index = 0
     for i in range(len(free_times)):
@@ -65,9 +69,9 @@ def period(bot, update):
         start = pd.Timestamp(free_times[i][0])
         end = pd.Timestamp(free_times[i][1])
         free_period = pd.Timedelta(end - start)
-        if free_period > pd.Timedelta(length_of_event + 'minutes'):
+        if free_period > pd.Timedelta(LENGTH_OF_EVENT + 'minutes'):
             response = str(day) + ", " + str(start.time()) + " => " + str(end.time())
-            chosen_periods.append(response)
+            CHOSEN_PERIODS.append(response)
             #update.message.reply_text(str(day) + ", " + str(start.time()) + " => " + str(end.time()))
             keyboard.append([InlineKeyboardButton(response, callback_data='{}'.format(index))])
             index = index + 1
@@ -77,25 +81,53 @@ def period(bot, update):
 
 def request(bot, update):
     query = update.callback_query
+    print CHOSEN_PERIODS
     print query.data
     print query.message
-    keyboard = [[InlineKeyboardButton("Request Meeting",
-                                      switch_inline_query="{} wants to schedule a meeting with you".format(
-                                          query.message['chat']['first_name']
-                                          )),
-                 ]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    interval = CHOSEN_PERIODS[int(query.data)-1]
+    # keyboard = [[InlineKeyboardButton("Request Meeting",
+    #                                   switch_inline_query="{} wants to schedule a meeting with you".format(
+    #                                       query.message['chat']['first_name']
+    #                                       )),
+    #              ]]
 
+
+    #keyboard = [[InlineKeyboardButton("Request Meeting", callback_data='{}'.format(2))]]
+    #reply_markup = InlineKeyboardMarkup(keyboard)
+    free_times = db.get_free_time('2', interval[0], interval[1])
+    print "FREE TIME ", free_times
+    chosen_periods = []
+    keyboard = []
+    index = 0
+    for i in range(len(free_times)):
+        day = pd.Timestamp(free_times[i][0]).date()
+        start = pd.Timestamp(free_times[i][0])
+        end = pd.Timestamp(free_times[i][1])
+        free_period = pd.Timedelta(end - start)
+        if free_period > pd.Timedelta(LENGTH_OF_EVENT + 'minutes'):
+            response = str(day) + ", " + str(start.time()) + " => " + str(end.time())
+            chosen_periods.append(response)
+            # update.message.reply_text(str(day) + ", " + str(start.time()) + " => " + str(end.time()))
+            keyboard.append([InlineKeyboardButton(response, callback_data='{}'.format(index))])
+            index = index + 1
+    reply_markup = InlineKeyboardMarkup(keyboard)
     #update.message.reply_text('Please choose:', reply_markup=reply_markup)
-    bot.send_message(chat_id=query.message.chat_id,
-                     text='Thanks! To schedule, press below', reply_markup=reply_markup)
-    return AVAILABILITY
+#     bot.send_message(bot.send_message(chat_id=query.message.chat_id,
+#                      text='Thanks! Scheduling as per request')
+# )
+    if (len(free_times) == 0):
+        bot.send_message(chat_id=CHAT_ID_Y,
+                         text='Hi! {} wants to schedule a meeting with you. Unfortunately, your schedule is not free.'.format(
+                             'Shardul'), reply_markup=reply_markup)
+        return AVAILABILITY
+    else:
+        bot.send_message(chat_id=CHAT_ID_Y,
+                     text='Hi! {} wants to schedule a meeting with you. You are free in the following timeslots. Please pick one.'.format('Shardul'), reply_markup=reply_markup)
+        return AVAILABILITY
 
 # def period2(bot, update):
 #     interval = chosen_periods[choice_index]
 #     user = update.message.from_user
-#     query = update.callback_query
-#     update.message.reply_text("You selected Option {}.Y/N?".format((query.data)+1))
 #     length_of_event = update.message.text
 #     update.message.reply_text("Hi! {}! wants to meet you for a 'select period here' between [select values of interval here]")
 #     free_times = db.get_free_time('2', interval[0], interval[1])
@@ -124,9 +156,10 @@ def availability(bot, update):
 
     update.message.reply_text('Please choose:', reply_markup=reply_markup)
 
-def button(bot, update):
-    query = update.inline_query
 
+def button(bot, update):
+    #query = update.inline_query
+    query = update.callback_query
 
 def inlinequery(bot, update):
     """Handle the inline query."""
@@ -170,8 +203,8 @@ def error(bot, update, error):
 
 def main():
     # Create the EventHandler and pass it your bot's token.
-    #updater = Updater("570050014:AAGrqiHt0choAHLYANzc8-8bcUHI5VzbRFw")
-    updater = Updater("491905862:AAFLeZ9-H56wumXpGN0LoyUN_1Dmm751nH8")
+    updater = Updater("570050014:AAGrqiHt0choAHLYANzc8-8bcUHI5VzbRFw")
+    #updater = Updater("491905862:AAFLeZ9-H56wumXpGN0LoyUN_1Dmm751nH8")
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
