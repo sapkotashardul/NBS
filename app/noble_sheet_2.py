@@ -78,7 +78,7 @@ def period(bot, update):
             index = index + 1
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Please choose your most preferred time:', reply_markup=reply_markup)
-    return REQUEST
+    return REQUEST    
 
 def request(bot, update):
     query = update.callback_query
@@ -99,6 +99,10 @@ def request(bot, update):
     print "FREE TIME ", free_times
     keyboard = []
     index = 0
+    bot.send_message(chat_id=CHAT_ID_X,
+                     text='Thanks! Scheduling as requested....')
+
+
     bot.send_message(chat_id=CHAT_ID_Y,
                      text='Hi! {} wants to schedule a meeting with you. You are free in the following timeslots. Please pick one.'.format('Shardul'))
 
@@ -136,8 +140,8 @@ def request(bot, update):
     return RESPONSE
 
 def response(bot,update):
-    update.message.reply_text("Great, here are your free times!")
-    bot.send_message(chat_id=CHAT_ID_X, text="Thanks! Scheduling as requested.")
+    bot.send_message(chat_id=CHAT_ID_X, text="Excellent! Meeting Scheduled and added to Calendar")
+    bot.send_message(chat_id=CHAT_ID_Y, text="Excellent! Meeting Scheduled and added to Calendar")
     return AVAILABILITY
 
 # def period2(bot, update):
